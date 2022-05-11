@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "bungcip.better-toml",
+    "vadimcn.vscode-lldb",
+    "EditorConfig.EditorConfig",
+    "yzhang.markdown-all-in-one",
+    "matklad.rust-analyzer",
+    "redhat.vscode-yaml"
+  ],
+  "unwantedRecommendations": [
+    "rust-lang.rust"
+  ]
+}
