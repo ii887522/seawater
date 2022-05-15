@@ -9,6 +9,7 @@ keywords = ["ecs", "entity-component-system", "water", "seawater"]
 exclude = [
   ".github/*",
   ".vscode/*",
+  "seawater-macro/.gitignore",
   "tests/*",
   ".editorconfig",
   ".gitignore",
@@ -17,3 +18,7 @@ exclude = [
   "README.md",
   "rustfmt.toml"
 ]
+
+[dependencies]
+iron-ingot = "0.2.0"
+seawater-macro = { path = "seawater-macro" }

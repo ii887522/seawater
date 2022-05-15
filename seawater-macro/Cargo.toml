@@ -1,0 +1,12 @@
+[package]
+name = "seawater-macro"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+iron-ingot = "0.2.0"
+syn = { version = "1.0.94", features = ["full"] }
+quote = "1.0.18"
