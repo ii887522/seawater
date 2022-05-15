@@ -5,7 +5,7 @@ edition = "2021"
 description = "It is a high performance entity component system useful as a backend for developing GUI applications and video games."
 repository = "https://github.com/ii887522/seawater"
 license = "MIT"
-keywords = ["ecs", "entity-component-system", "water", "seawater"]
+keywords = ["ecs", "water", "seawater"]
 exclude = [
   ".github/*",
   ".vscode/*",
@@ -21,4 +21,4 @@ exclude = [
 
 [dependencies]
 iron-ingot = "0.2.0"
-seawater-macro = { path = "seawater-macro" }
+seawater-macro = "0.1.0"
