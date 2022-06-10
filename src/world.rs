@@ -136,7 +136,7 @@ impl World {
       }));
   }
 
-  pub fn step(&mut self, dt: f64) {
+  pub fn step(&mut self, dt: f32) {
     debug_assert!(dt >= 0.0, "dt must be a positive number!");
     for system in &mut self.systems {
       system.step(dt);

@@ -6,7 +6,7 @@
 [![GitHub license](https://img.shields.io/github/license/ii887522/seawater.svg)](https://github.com/ii887522/seawater/blob/master/LICENSE)
 [![Github tag](https://badgen.net/github/tag/ii887522/seawater)](https://github.com/ii887522/seawater/tags/)
 
-It is a high performance entity component system useful as a backend for developing GUI applications and video games.
+A high performance entity component system useful as a backend for developing GUI applications and video games.
 
 ## Table of contents
 - [Prerequisites](https://github.com/ii887522/seawater#prerequisites)
