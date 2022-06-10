@@ -1,8 +1,8 @@
 [package]
 name = "seawater"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
-description = "It is a high performance entity component system useful as a backend for developing GUI applications and video games."
+description = "A high performance entity component system useful as a backend for developing GUI applications and video games."
 repository = "https://github.com/ii887522/seawater"
 license = "MIT"
 keywords = ["ecs", "water", "seawater"]
@@ -20,5 +20,5 @@ exclude = [
 ]
 
 [dependencies]
-iron-ingot = "0.2.0"
+iron-ingot = "0.4.1"
 seawater-macro = "0.1.0"

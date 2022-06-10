@@ -19,7 +19,7 @@ pub fn find_archetype(input: TokenStream) -> TokenStream {
   let ast: Expr = syn::parse(input)
     .expect("Arguments of find_archetype must be a world variable and some component types!");
   if let Expr::Tuple(tuple) = ast {
-    if let Expr::Path(world) = tuple.elems.first().unwrap() {
+    if let Expr::Path(world) = tuple.elems.first().expect("The first argument of find_archetype must be a world variable!") {
       let world = &world.path;
       let ty = tuple
         .elems
