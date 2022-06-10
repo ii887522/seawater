@@ -4,14 +4,14 @@ use std::{borrow::Cow, cell::RefCell, rc::Rc};
 
 #[derive(Copy, Clone, Component, Debug, PartialEq)]
 struct Position {
-  x: f64,
-  y: f64,
+  x: f32,
+  y: f32,
 }
 
 #[derive(Copy, Clone, Component, Debug, PartialEq)]
 struct Collider {
-  w: f64,
-  h: f64,
+  w: f32,
+  h: f32,
 }
 
 #[derive(Copy, Clone, Component, Debug, PartialEq)]
@@ -1030,33 +1030,33 @@ fn test_find_archetype_from_heaven() {
 
 #[derive(Debug)]
 struct MovementSystem {
-  count: Shared<f64>,
+  count: Shared<f32>,
 }
 
 impl System for MovementSystem {
-  fn step(&mut self, dt: f64) {
+  fn step(&mut self, dt: f32) {
     *self.count.borrow_mut() += dt;
   }
 }
 
 #[derive(Debug)]
 struct CollisionSystem {
-  count: Shared<f64>,
+  count: Shared<f32>,
 }
 
 impl System for CollisionSystem {
-  fn step(&mut self, dt: f64) {
+  fn step(&mut self, dt: f32) {
     *self.count.borrow_mut() *= dt;
   }
 }
 
 #[derive(Debug)]
 struct GraphicsSystem {
-  count: Shared<f64>,
+  count: Shared<f32>,
 }
 
 impl System for GraphicsSystem {
-  fn step(&mut self, dt: f64) {
+  fn step(&mut self, dt: f32) {
     *self.count.borrow_mut() -= dt;
   }
 }

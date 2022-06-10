@@ -1,2 +1,2 @@
 # seawater-macro
-It is a procedural macro library used together with seawater.
+A procedural macro library used together with seawater.
