@@ -88,17 +88,20 @@ fn find_archetype_with_multiple_types(world: &Path, ty: Vec<&Path>) -> TokenStre
   quote! {
     {
       use std::borrow::Cow;
+      use rayon::prelude::*;
 
       #( let #components = #world.get_components::<#ty>(); )*
-      let len = 0#(.max(#components.len()))*;
-      let mut archetype = Vec::<(#( Option<#ty>, )*)>::with_capacity(len);
-      for i in 0..len {
-        #( let &#component = #components.get(i).unwrap_or(&None); )*
-        if #( #component.is_some() || )* false {
-          archetype.push((#( #component, )*));
-        }
-      }
-      Cow::<[(#( Option<#ty>, )*)]>::from(archetype)
+      (0..0#(.max(#components.len()))*)
+        .into_par_iter()
+        .filter_map(|i| {
+          #( let &#component = #components.get(i).unwrap_or(&None); )*
+          if #( #component.is_some() || )* false {
+            Some((#( #component, )*))
+          } else {
+            None
+          }
+        })
+        .collect::<Cow::<[(#( Option<#ty>, )*)]>>()
     }
   }
   .into()
