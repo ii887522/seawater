@@ -1,15 +1,189 @@
 use iron_ingot::{snake_case_str::ToSnakeCase, CamelCaseStr};
 use proc_macro::TokenStream;
-use quote::{__private::Span, quote};
-use std::cmp::Ordering::{Equal, Greater, Less};
-use syn::{DeriveInput, Expr, Ident, Path};
+use quote::{__private::TokenTree, format_ident, quote};
+use std::cmp::Ordering;
+use syn::{Expr, ExprField, ExprPath, Field, Fields, ItemStruct, Path, Visibility};
 
-#[proc_macro_derive(Component)]
-pub fn derive_component(input: TokenStream) -> TokenStream {
-  let ast: DeriveInput = syn::parse(input).unwrap();
+enum Var<'a> {
+  Path(&'a ExprPath),
+  Field(&'a ExprField),
+}
+
+#[proc_macro]
+pub fn define_component(input: TokenStream) -> TokenStream {
+  let ast: ItemStruct = syn::parse(input).expect("Argument of define_component must be a struct!");
+  let module_name = format_ident!(
+    "{}",
+    CamelCaseStr::new(&ast.ident.to_string()).to_snake_case()
+  );
+  let impl_name = format_ident!("{}Impl", ast.ident);
+  let struct_impl = match &ast.fields {
+    Fields::Named(fields) => {
+      let fields = fields.named.iter().map(|field| Field {
+        attrs: vec![],
+        vis: Visibility::Inherited,
+        ..field.clone()
+      });
+      quote! {
+        {
+          #( #fields, )*
+        }
+      }
+    }
+    Fields::Unnamed(fields) => {
+      let fields = fields.unnamed.iter().map(|field| Field {
+        attrs: vec![],
+        vis: Visibility::Inherited,
+        ..field.clone()
+      });
+      quote! {
+        (#( #fields, )*);
+      }
+    }
+    Fields::Unit => quote! { ; },
+  };
+  let default_values = match &ast.fields {
+    Fields::Named(fields) => {
+      let idents = fields
+        .named
+        .iter()
+        .map(|field| field.ident.as_ref().unwrap());
+      let values = fields.named.iter().map(|field| {
+        if let Some(attr) = field.attrs.iter().find(|&attr| {
+          attr
+            .path
+            .segments
+            .iter()
+            .any(|segment| segment.ident == "default")
+        }) {
+          if let TokenTree::Group(group) = attr.tokens.clone().into_iter().next().unwrap() {
+            let value = group.stream();
+            quote! {
+              #value
+            }
+          } else {
+            panic!("default attribute name must be followed by a value enclosed in parentheses!");
+          }
+        } else {
+          quote! {
+            Default::default()
+          }
+        }
+      });
+      quote! {
+        {
+          #( #idents: #values, )*
+        }
+      }
+    }
+    Fields::Unnamed(fields) => {
+      let values = fields.unnamed.iter().map(|field| {
+        if let Some(attr) = field.attrs.iter().find(|&attr| {
+          attr
+            .path
+            .segments
+            .iter()
+            .any(|segment| segment.ident == "default")
+        }) {
+          if let TokenTree::Group(group) = attr.tokens.clone().into_iter().next().unwrap() {
+            let value = group.stream();
+            quote! {
+              #value
+            }
+          } else {
+            panic!("default attribute name must be followed by a value enclosed in parentheses!");
+          }
+        } else {
+          quote! {
+            Default::default()
+          }
+        }
+      });
+      quote! {
+        (#( #values, )*)
+      }
+    }
+    Fields::Unit => quote! {},
+  };
+  let vis = ast.vis;
   let name = ast.ident;
+  let accessors = match ast.fields {
+    Fields::Named(fields) => {
+      let names = fields
+        .named
+        .iter()
+        .map(|field| field.ident.as_ref().unwrap());
+      let types = fields.named.iter().map(|field| &field.ty);
+      quote! {
+        #(
+          pub fn #names(&self) -> &mut #types {
+            &mut unsafe { &mut *self.0.get() }.#names
+          }
+
+        )*
+      }
+    }
+    Fields::Unnamed(fields) => {
+      let names = fields
+        .unnamed
+        .iter()
+        .enumerate()
+        .map(|(name, _)| format_ident!("{}", name));
+      let types = fields.unnamed.iter().map(|field| &field.ty);
+      quote! {
+        #(
+          pub fn #names(&self) -> &mut #types {
+            &mut unsafe { &mut *self.0.get() }.#names
+          }
+
+        )*
+      }
+    }
+    Fields::Unit => quote! {},
+  };
   quote! {
-    impl Component for #name {}
+    #vis mod #module_name {
+      use std::cell::UnsafeCell;
+      use seawater::prelude::*;
+
+      #[derive(Clone, Debug, PartialEq)]
+      struct #impl_name #struct_impl
+
+      impl Default for #impl_name {
+        fn default() -> Self {
+          Self #default_values
+        }
+      }
+
+      #[derive(Debug)]
+      pub struct #name(UnsafeCell<#impl_name>);
+
+      unsafe impl Sync for #name {}
+
+      impl Clone for #name {
+        fn clone(&self) -> Self {
+          Self(UnsafeCell::new(unsafe { &*self.0.get() }.clone()))
+        }
+      }
+
+      impl Component for #name {}
+
+      impl PartialEq for #name {
+        fn eq(&self, other: &Self) -> bool {
+          (unsafe { &*self.0.get() }) == (unsafe { &*other.0.get() })
+        }
+      }
+
+      impl #name {
+        pub fn new() -> Self {
+          Self(UnsafeCell::new(#impl_name::default()))
+        }
+
+        #accessors
+      }
+    }
+
+    #vis use #module_name::#name;
   }
   .into()
 }
@@ -19,50 +193,66 @@ pub fn find_archetype(input: TokenStream) -> TokenStream {
   let ast: Expr = syn::parse(input)
     .expect("Arguments of find_archetype must be a world variable and some component types!");
   if let Expr::Tuple(tuple) = ast {
-    if let Expr::Path(world) = tuple.elems.first().expect("The first argument of find_archetype must be a world variable!") {
-      let world = &world.path;
-      let ty = tuple
-        .elems
-        .iter()
-        .skip(1)
-        .map(|ty| {
-          if let Expr::Path(ty) = ty {
-            &ty.path
-          } else {
-            panic!("All arguments of find_archetype except the first one must be component types!");
-          }
-        })
-        .collect::<Vec<_>>();
-      match ty.len().cmp(&1) {
-        Greater => find_archetype_with_multiple_types(world, ty),
-        Equal => find_archetype_with_single_type(world, ty),
-        Less => panic!("Component types for find_archetype are required!"),
-      }
-    } else {
-      panic!("The first argument of find_archetype must be a world variable!");
+    let ty = tuple
+      .elems
+      .iter()
+      .skip(1)
+      .map(|ty| {
+        if let Expr::Path(ty) = ty {
+          &ty.path
+        } else {
+          panic!("All arguments of find_archetype except the first one must be component types!");
+        }
+      })
+      .collect::<Vec<_>>();
+    match tuple
+      .elems
+      .first()
+      .expect("The first argument of find_archetype must be a world variable!")
+    {
+      Expr::Path(world) => match ty.len().cmp(&1) {
+        Ordering::Greater => find_archetype_with_multiple_types(Var::Path(world), ty),
+        Ordering::Equal => find_archetype_with_single_type(Var::Path(world), ty),
+        Ordering::Less => panic!("Component types for find_archetype are required!"),
+      },
+      Expr::Field(world) => match ty.len().cmp(&1) {
+        Ordering::Greater => find_archetype_with_multiple_types(Var::Field(world), ty),
+        Ordering::Equal => find_archetype_with_single_type(Var::Field(world), ty),
+        Ordering::Less => panic!("Component types for find_archetype are required!"),
+      },
+      _ => panic!("The first argument of find_archetype must be a world variable!"),
     }
   } else {
     panic!("Arguments of find_archetype must be a world variable and some component types!");
   }
 }
 
-fn find_archetype_with_single_type(world: &Path, ty: Vec<&Path>) -> TokenStream {
+fn find_archetype_with_single_type(world: Var, ty: Vec<&Path>) -> TokenStream {
+  let world = match world {
+    Var::Path(path) => quote! { #path },
+    Var::Field(field) => quote! { #field },
+  };
   let ty = ty[0];
   quote! {
     {
-      use std::borrow::Cow;
+      use rayon::prelude::*;
 
-      Cow::<[Option<#ty>]>::from(#world.get_components::<#ty>())
+      #world.get_components::<#ty>().par_iter().collect::<Vec<_>>()
     }
   }
   .into()
 }
 
-fn find_archetype_with_multiple_types(world: &Path, ty: Vec<&Path>) -> TokenStream {
+fn find_archetype_with_multiple_types(world: Var, ty: Vec<&Path>) -> TokenStream {
+  let world = match world {
+    Var::Path(path) => quote! { #path },
+    Var::Field(field) => quote! { #field },
+  };
   let component = ty
     .iter()
     .map(|&ty| {
-      Ident::new(
+      format_ident!(
+        "{}",
         ty.segments
           .iter()
           .map(|segment| {
@@ -76,32 +266,30 @@ fn find_archetype_with_multiple_types(world: &Path, ty: Vec<&Path>) -> TokenStre
           .fold("".to_owned(), |component, segment| {
             component + &segment + "_"
           })
-          .trim_end_matches('_'),
-        Span::mixed_site(),
+          .trim_end_matches('_')
       )
     })
     .collect::<Vec<_>>();
   let components = component
     .iter()
-    .map(|component| Ident::new(&(component.to_string() + "s"), Span::mixed_site()))
+    .map(|component| format_ident!("{}", component.to_string() + "s"))
     .collect::<Vec<_>>();
   quote! {
     {
-      use std::borrow::Cow;
       use rayon::prelude::*;
 
       #( let #components = #world.get_components::<#ty>(); )*
       (0..0#(.max(#components.len()))*)
         .into_par_iter()
         .filter_map(|i| {
-          #( let &#component = #components.get(i).unwrap_or(&None); )*
+          #( let #component = #components.get(i).unwrap_or(&None); )*
           if #( #component.is_some() || )* false {
             Some((#( #component, )*))
           } else {
             None
           }
         })
-        .collect::<Cow::<[(#( Option<#ty>, )*)]>>()
+        .collect::<Vec<_>>()
     }
   }
   .into()
