@@ -143,6 +143,7 @@ pub fn define_component(input: TokenStream) -> TokenStream {
   };
   quote! {
     #vis mod #module_name {
+      use super::*;
       use std::cell::UnsafeCell;
       use seawater::prelude::*;
 
