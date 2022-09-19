@@ -22,4 +22,4 @@ exclude = [
 [dependencies]
 iron-ingot = "0.4.1"
 rayon = "1.5.3"
-seawater-macro = "0.2.1"
+seawater-macro = "0.2.2"
