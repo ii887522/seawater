@@ -116,6 +116,7 @@ pub fn define_component(input: TokenStream) -> TokenStream {
       let types = fields.named.iter().map(|field| &field.ty);
       quote! {
         #(
+          #[allow(clippy::mut_from_ref)]
           pub fn #names(&self) -> &mut #types {
             &mut unsafe { &mut *self.0.get() }.#names
           }
@@ -132,6 +133,7 @@ pub fn define_component(input: TokenStream) -> TokenStream {
       let types = fields.unnamed.iter().map(|field| &field.ty);
       quote! {
         #(
+          #[allow(clippy::mut_from_ref)]
           pub fn #names(&self) -> &mut #types {
             &mut unsafe { &mut *self.0.get() }.#names
           }

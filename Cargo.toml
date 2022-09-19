@@ -1,6 +1,6 @@
 [package]
 name = "seawater"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "A high performance entity component system useful as a backend for developing GUI applications and video games."
 repository = "https://github.com/ii887522/seawater"
@@ -22,4 +22,4 @@ exclude = [
 [dependencies]
 iron-ingot = "0.4.1"
 rayon = "1.5.3"
-seawater-macro = "0.2.1"
+seawater-macro = "0.2.2"
