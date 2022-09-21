@@ -1,3 +1,5 @@
+mod consts;
+
 use iron_ingot::{snake_case_str::ToSnakeCase, CamelCaseStr};
 use proc_macro::TokenStream;
 use quote::{__private::TokenTree, format_ident, quote};
@@ -16,7 +18,7 @@ pub fn define_component(input: TokenStream) -> TokenStream {
     "{}",
     CamelCaseStr::new(&ast.ident.to_string()).to_snake_case()
   );
-  let impl_name = format_ident!("{}Impl", ast.ident);
+  let impl_name = format_ident!("{}{}", ast.ident, consts::IMPL);
   let struct_impl = match &ast.fields {
     Fields::Named(fields) => {
       let fields = fields.named.iter().map(|field| Field {
@@ -54,7 +56,7 @@ pub fn define_component(input: TokenStream) -> TokenStream {
             .path
             .segments
             .iter()
-            .any(|segment| segment.ident == "default")
+            .any(|segment| segment.ident == consts::DEFAULT)
         }) {
           if let TokenTree::Group(group) = attr.tokens.clone().into_iter().next().unwrap() {
             let value = group.stream();
@@ -83,7 +85,7 @@ pub fn define_component(input: TokenStream) -> TokenStream {
             .path
             .segments
             .iter()
-            .any(|segment| segment.ident == "default")
+            .any(|segment| segment.ident == consts::DEFAULT)
         }) {
           if let TokenTree::Group(group) = attr.tokens.clone().into_iter().next().unwrap() {
             let value = group.stream();
